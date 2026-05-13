@@ -14,6 +14,7 @@
 #if defined(__GNUC__) || defined(__clang__)
 #define PACKED __attribute__((packed))
 #else
+/* Non-GNU compilers rely on surrounding #pragma pack directives. */
 #define PACKED
 #pragma pack(push, 1)
 #endif

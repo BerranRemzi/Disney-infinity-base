@@ -30,6 +30,25 @@ static uint8_t checksum_u8(const uint8_t* data, uint8_t length)
   return (uint8_t)(sum & 0xFFu);
 }
 
+static uint64_t read_be_u64(const uint8_t* data)
+{
+  return ((uint64_t)data[0] << 56u) | ((uint64_t)data[1] << 48u) | ((uint64_t)data[2] << 40u) |
+         ((uint64_t)data[3] << 32u) | ((uint64_t)data[4] << 24u) | ((uint64_t)data[5] << 16u) |
+         ((uint64_t)data[6] << 8u) | (uint64_t)data[7];
+}
+
+static void write_be_u64(uint8_t* data, uint64_t value)
+{
+  data[0] = (uint8_t)((value >> 56u) & 0xFFu);
+  data[1] = (uint8_t)((value >> 48u) & 0xFFu);
+  data[2] = (uint8_t)((value >> 40u) & 0xFFu);
+  data[3] = (uint8_t)((value >> 32u) & 0xFFu);
+  data[4] = (uint8_t)((value >> 24u) & 0xFFu);
+  data[5] = (uint8_t)((value >> 16u) & 0xFFu);
+  data[6] = (uint8_t)((value >> 8u) & 0xFFu);
+  data[7] = (uint8_t)(value & 0xFFu);
+}
+
 static uint32_t rotl32(uint32_t v, uint8_t bits)
 {
   return (uint32_t)((v << bits) | (v >> (32u - bits)));
@@ -215,9 +234,7 @@ static void response_write_block(disney_infinity_t* inf, uint8_t order, uint8_t 
 
 static void response_challenge_setup(disney_infinity_t* inf, const uint8_t* in, uint8_t sequence, uint8_t out[32])
 {
-  uint64_t value = ((uint64_t)in[4] << 56u) | ((uint64_t)in[5] << 48u) | ((uint64_t)in[6] << 40u) |
-                   ((uint64_t)in[7] << 32u) | ((uint64_t)in[8] << 24u) | ((uint64_t)in[9] << 16u) |
-                   ((uint64_t)in[10] << 8u) | ((uint64_t)in[11]);
+  uint64_t value = read_be_u64(&in[4]);
   uint32_t seed = descramble_u64(value);
   rng_seed(inf, seed);
   make_blank_response(sequence, out);
@@ -230,14 +247,7 @@ static void response_challenge_next(disney_infinity_t* inf, uint8_t sequence, ui
   out[0] = FRAME_PREFIX_RESP;
   out[1] = 0x09;
   out[2] = sequence;
-  out[3] = (uint8_t)((scrambled >> 56u) & 0xFFu);
-  out[4] = (uint8_t)((scrambled >> 48u) & 0xFFu);
-  out[5] = (uint8_t)((scrambled >> 40u) & 0xFFu);
-  out[6] = (uint8_t)((scrambled >> 32u) & 0xFFu);
-  out[7] = (uint8_t)((scrambled >> 24u) & 0xFFu);
-  out[8] = (uint8_t)((scrambled >> 16u) & 0xFFu);
-  out[9] = (uint8_t)((scrambled >> 8u) & 0xFFu);
-  out[10] = (uint8_t)(scrambled & 0xFFu);
+  write_be_u64(&out[3], scrambled);
   out[11] = checksum_u8(out, 11);
 }
 
