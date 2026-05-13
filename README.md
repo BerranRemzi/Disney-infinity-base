@@ -1,66 +1,56 @@
-# Disney Infinity Base (STM32-oriented)
+# Disney Infinity Base (STM32F103 + libopencm3)
 
-This repository now contains a lightweight embedded C port of the Disney Infinity USB base emulation flow, based on Dolphin Emulator's `Infinity.cpp` behavior.
+This repository contains a modular embedded C implementation of Disney Infinity USB base behavior, now structured around a **portable core** and a **libopencm3 STM32F103 platform layer**.
 
-## What was extracted from Dolphin
+## Protocol behavior mirrored from Dolphin
 
 - **VID/PID:** `0x0E6F:0x0129`
 - **USB class:** HID
 - **Endpoints:** Interrupt IN `0x81`, Interrupt OUT `0x01`
 - **Packet size:** 32 bytes
-- **Core framing:**
-  - Host command frame starts with `0xFF`
-  - Device response frame starts with `0xAA` (normal) or `0xAB` (figure add/remove event)
-  - Last byte of protocol payload uses additive checksum (`sum(payload bytes) & 0xFF`)
-- **Key commands mirrored from Dolphin:**
-  - `0x80` activate base
-  - `0x81` seed/auth challenge setup (descramble + RNG seed)
-  - `0x83` auth challenge response (RNG next + scramble)
-  - `0x90/0x92/0x93/0x95/0x96` color commands (ack)
-  - `0xA1` present figures
-  - `0xA2` read figure block
-  - `0xA3` write figure block
-  - `0xB4` read figure identifier
-  - `0xB5` status ack
-- **Figure memory layout:** 20 blocks × 16 bytes = 320 bytes per figure.
-- **Block mapping (protocol → storage):** `0 -> 1`, otherwise `n -> n*4` (same as Dolphin).
-- **Authentication logic:** same scramble/descramble mask and RNG state update pattern used by Dolphin.
+- **Frames:**
+  - Host command prefix: `0xFF`
+  - Device response prefix: `0xAA`
+  - Figure add/remove event prefix: `0xAB`
+- **Checksum:** additive (`sum(payload) & 0xFF`)
+- **Figure layout:** `20 * 16 = 320` bytes
+- **Block mapping:** `0 -> 1`, otherwise `n -> n * 4`
 
-## Added embedded-oriented modules
+## New project structure
 
-- `usb_descriptors.c`
-- `usb_descriptors.h`
-- `usb_hid.c`
-- `usb_hid.h`
-- `disney_infinity.c`
-- `disney_infinity.h`
-- `figure_storage.c`
-- `figure_storage.h`
+- `include/`
+  - `disney_infinity.h`
+  - `figure_storage.h`
+  - `usb_hid.h`
+  - `usb_descriptors.h`
+  - `platform/stm32f103/usb_base_platform.h`
+- `src/core/`
+  - Protocol/queue/state machine and figure storage modules
+- `src/platform/stm32f103/`
+  - `usb_base_platform.c`: libopencm3 USB FS integration for STM32F103
+  - `main.c`: firmware entrypoint loop
+- `Makefile`
+  - libopencm3-oriented firmware build and host-side core compile check
 
-## Architecture mapping (Dolphin C++ → embedded C)
+## Build requirements
 
-- `InfinityUSB` transport behavior → `usb_hid.*`
-- `InfinityBase` command logic → `disney_infinity.*`
-- Figure slot and order tracking (`m_figures`, `order_added`) → `figure_storage.*`
-- USB descriptor values from emulator implementations (Dolphin/Cemu) → `usb_descriptors.*`
+- `arm-none-eabi-gcc`
+- `make`
+- `libopencm3` built and available at `OPENCM3_DIR` (default: `/opt/libopencm3`)
 
-## Bare-metal integration strategy (STM32F103 USB FS)
+## Build firmware (STM32F103)
 
-1. Use your USB device layer to return descriptors from `usb_descriptors.*`.
-2. Configure HID interrupt endpoints (IN/OUT, 32-byte reports).
-3. On OUT report reception call:
-   - `usb_hid_receive_out_report(&ctx, out_report)`
-4. On IN token / periodic poll call:
-   - `usb_hid_get_in_report(&ctx, in_report)` and send only if `true`.
-5. Mount/unmount figures from flash/SD dumps using:
-   - `disney_infinity_mount_figure(...)`
-   - `disney_infinity_unmount_figure(...)`
+```bash
+make OPENCM3_DIR=/path/to/libopencm3
+```
 
-No dynamic allocation, no STL, fixed-size queues/arrays only.
+## Validate portable core modules on host
 
-## Timing-sensitive notes and limitations
+```bash
+make core-check
+```
 
-- Dolphin schedules responses roughly at sub-millisecond to 1ms granularity; this port uses immediate queueing and relies on host IN polling cadence.
-- If stricter timing is needed for specific consoles, add a timestamp gate before releasing queued responses.
-- Figure data is treated as pre-existing encrypted NFC payload blocks (same practical assumption as Dolphin runtime read/write path).
-- HID report descriptor here is a compact vendor-defined 32-byte IN/OUT descriptor; if your target console is strict, capture and mirror exact report descriptor bytes from a real base.
+## Notes
+
+- The STM32 integration now uses libopencm3 USB device APIs and a dedicated STM32F103 platform module.
+- Core protocol logic remains hardware-agnostic and can be reused on other targets by replacing `src/platform/*`.
