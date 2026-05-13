@@ -119,7 +119,7 @@ static const struct usb_config_descriptor g_config_descriptor = {
 };
 
 static const char* g_usb_strings[] = {
-    "PDP AUDIO",
+    "PDP AUDI",
     "Disney Infinity Base",
     "00000001A",
 };
@@ -175,8 +175,8 @@ void usb_base_platform_init(void)
   gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO12);
   gpio_clear(GPIOA, GPIO12);
   /* Hold D+ low briefly so the host re-enumerates after firmware reset. */
-  for (volatile unsigned i = 0; i < USB_DISCOVERY_DELAY_CYCLES; ++i)
-    __asm__("nop");
+  for (uint32_t i = 0; i < USB_DISCOVERY_DELAY_CYCLES; ++i)
+    __asm__ volatile("nop");
 
   gpio_set_mode(GPIOA, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT, GPIO12);
 
