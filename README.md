@@ -28,14 +28,14 @@ This repository now contains a lightweight embedded C port of the Disney Infinit
 
 ## Added embedded-oriented modules
 
-- `/home/runner/work/Disney-infinity-base/Disney-infinity-base/usb_descriptors.c`
-- `/home/runner/work/Disney-infinity-base/Disney-infinity-base/usb_descriptors.h`
-- `/home/runner/work/Disney-infinity-base/Disney-infinity-base/usb_hid.c`
-- `/home/runner/work/Disney-infinity-base/Disney-infinity-base/usb_hid.h`
-- `/home/runner/work/Disney-infinity-base/Disney-infinity-base/disney_infinity.c`
-- `/home/runner/work/Disney-infinity-base/Disney-infinity-base/disney_infinity.h`
-- `/home/runner/work/Disney-infinity-base/Disney-infinity-base/figure_storage.c`
-- `/home/runner/work/Disney-infinity-base/Disney-infinity-base/figure_storage.h`
+- `usb_descriptors.c`
+- `usb_descriptors.h`
+- `usb_hid.c`
+- `usb_hid.h`
+- `disney_infinity.c`
+- `disney_infinity.h`
+- `figure_storage.c`
+- `figure_storage.h`
 
 ## Architecture mapping (Dolphin C++ → embedded C)
 
