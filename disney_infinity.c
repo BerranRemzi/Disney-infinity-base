@@ -35,7 +35,7 @@ static uint32_t rotl32(uint32_t v, uint8_t bits)
   return (uint32_t)((v << bits) | (v >> (32u - bits)));
 }
 
-static uint64_t scramble_u32(uint32_t num_to_scramble, uint32_t garbage)
+static uint64_t scramble_u32(uint32_t num_to_scramble, uint32_t padding_bits)
 {
   uint64_t mask = k_scramble_mask;
   uint64_t out = 0;
@@ -50,8 +50,8 @@ static uint64_t scramble_u32(uint32_t num_to_scramble, uint32_t garbage)
     }
     else
     {
-      out |= (uint64_t)(garbage & 1u);
-      garbage >>= 1u;
+      out |= (uint64_t)(padding_bits & 1u);
+      padding_bits >>= 1u;
     }
     mask >>= 1u;
   }

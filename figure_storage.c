@@ -4,10 +4,9 @@
 
 void figure_storage_init(figure_storage_t* storage)
 {
-  uint8_t i;
   memset(storage, 0, sizeof(*storage));
   storage->next_order = 0;
-  for (i = 0; i < DISNEY_INFINITY_SLOT_COUNT; ++i)
+  for (uint8_t i = 0; i < DISNEY_INFINITY_SLOT_COUNT; ++i)
     storage->slots[i].order_added = 0xFF;
 }
 
