@@ -2,6 +2,19 @@
 
 #include <string.h>
 
+enum
+{
+  FRAME_PREFIX_QUERY = 0x00,
+  FRAME_PREFIX_RESP = 0xAA,
+  FRAME_PREFIX_EVENT = 0xAB,
+  FRAME_PREFIX_CMD = 0xFF
+};
+
+static const uint8_t k_activate_base_response[] = {
+    /* Fixed response payload mirrored from Dolphin's command 0x80 behavior. */
+    0xAA, 0x15, 0x00, 0x00, 0x0F, 0x01, 0x00, 0x03, 0x02, 0x09, 0x09, 0x43,
+    0x20, 0x32, 0x62, 0x36, 0x36, 0x4B, 0x34, 0x99, 0x67, 0x31, 0x93, 0x8C};
+
 static uint8_t checksum_u8(const uint8_t* data, uint8_t length)
 {
   uint16_t sum = 0;
@@ -121,7 +134,7 @@ static bool queue_pop(disney_infinity_t* inf, uint8_t frame[32])
 static void make_blank_response(uint8_t sequence, uint8_t out[32])
 {
   memset(out, 0, DISNEY_INFINITY_FRAME_SIZE);
-  out[0] = 0xAA;
+  out[0] = FRAME_PREFIX_RESP;
   out[1] = 0x01;
   out[2] = sequence;
   out[3] = checksum_u8(out, 3);
@@ -142,7 +155,7 @@ static void response_present_figures(const disney_infinity_t* inf, uint8_t seque
     out[x + 1u] = 0x09;
     x = (uint8_t)(x + 2u);
   }
-  out[0] = 0xAA;
+  out[0] = FRAME_PREFIX_RESP;
   out[1] = (uint8_t)(x - 2u);
   out[2] = sequence;
   out[x] = checksum_u8(out, x);
@@ -153,7 +166,7 @@ static void response_get_identifier(const disney_infinity_t* inf, uint8_t order,
 {
   const disney_figure_slot_t* slot = figure_storage_get_by_order(&inf->storage, order);
   memset(out, 0, DISNEY_INFINITY_FRAME_SIZE);
-  out[0] = 0xAA;
+  out[0] = FRAME_PREFIX_RESP;
   out[1] = 0x09;
   out[2] = sequence;
   out[3] = 0x00;
@@ -168,7 +181,7 @@ static void response_read_block(const disney_infinity_t* inf, uint8_t order, uin
   const disney_figure_slot_t* slot = figure_storage_get_by_order(&inf->storage, order);
   uint8_t file_block = figure_storage_protocol_to_file_block(block);
   memset(out, 0, DISNEY_INFINITY_FRAME_SIZE);
-  out[0] = 0xAA;
+  out[0] = FRAME_PREFIX_RESP;
   out[1] = 0x12;
   out[2] = sequence;
   out[3] = 0x00;
@@ -183,7 +196,7 @@ static void response_write_block(disney_infinity_t* inf, uint8_t order, uint8_t 
   disney_figure_slot_t* slot = figure_storage_get_by_order_mut(&inf->storage, order);
   uint8_t file_block = figure_storage_protocol_to_file_block(block);
   memset(out, 0, DISNEY_INFINITY_FRAME_SIZE);
-  out[0] = 0xAA;
+  out[0] = FRAME_PREFIX_RESP;
   out[1] = 0x02;
   out[2] = sequence;
   out[3] = 0x00;
@@ -206,7 +219,7 @@ static void response_challenge_next(disney_infinity_t* inf, uint8_t sequence, ui
 {
   uint64_t scrambled = scramble_u32(rng_next(inf), 0u);
   memset(out, 0, DISNEY_INFINITY_FRAME_SIZE);
-  out[0] = 0xAA;
+  out[0] = FRAME_PREFIX_RESP;
   out[1] = 0x09;
   out[2] = sequence;
   out[3] = (uint8_t)((scrambled >> 56u) & 0xFFu);
@@ -237,7 +250,7 @@ bool disney_infinity_mount_figure(disney_infinity_t* infinity, uint8_t slot_inde
   position = figure_storage_derive_base_position(slot_index);
   if (position == FIGURE_BASE_POSITION_UNKNOWN)
     return true;
-  event[0] = 0xAB;
+  event[0] = FRAME_PREFIX_EVENT;
   event[1] = 0x04;
   event[2] = (uint8_t)position;
   event[3] = 0x09;
@@ -257,7 +270,7 @@ bool disney_infinity_unmount_figure(disney_infinity_t* infinity, uint8_t slot_in
     return false;
   if (position == FIGURE_BASE_POSITION_UNKNOWN)
     return true;
-  event[0] = 0xAB;
+  event[0] = FRAME_PREFIX_EVENT;
   event[1] = 0x04;
   event[2] = (uint8_t)position;
   event[3] = 0x09;
@@ -277,14 +290,15 @@ void disney_infinity_handle_packet(disney_infinity_t* infinity, const uint8_t ou
   *in_valid = false;
   memset(in_frame, 0, DISNEY_INFINITY_FRAME_SIZE);
 
-  if (out_frame[0] == 0x00 || out_frame[0] == 0xAA || out_frame[0] == 0xAB)
+  if (out_frame[0] == FRAME_PREFIX_QUERY || out_frame[0] == FRAME_PREFIX_RESP ||
+      out_frame[0] == FRAME_PREFIX_EVENT)
   {
     if (queue_pop(infinity, in_frame))
       *in_valid = true;
     return;
   }
 
-  if (out_frame[0] != 0xFF)
+  if (out_frame[0] != FRAME_PREFIX_CMD)
     return;
 
   cmd = out_frame[2];
@@ -294,30 +308,7 @@ void disney_infinity_handle_packet(disney_infinity_t* infinity, const uint8_t ou
   switch (cmd)
   {
   case 0x80:
-    response[0] = 0xAA;
-    response[1] = 0x15;
-    response[2] = 0x00;
-    response[3] = 0x00;
-    response[4] = 0x0F;
-    response[5] = 0x01;
-    response[6] = 0x00;
-    response[7] = 0x03;
-    response[8] = 0x02;
-    response[9] = 0x09;
-    response[10] = 0x09;
-    response[11] = 0x43;
-    response[12] = 0x20;
-    response[13] = 0x32;
-    response[14] = 0x62;
-    response[15] = 0x36;
-    response[16] = 0x36;
-    response[17] = 0x4B;
-    response[18] = 0x34;
-    response[19] = 0x99;
-    response[20] = 0x67;
-    response[21] = 0x31;
-    response[22] = 0x93;
-    response[23] = 0x8C;
+    memcpy(response, k_activate_base_response, sizeof(k_activate_base_response));
     break;
   case 0x81:
     response_challenge_setup(infinity, out_frame, seq, response);
