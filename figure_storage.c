@@ -69,11 +69,11 @@ disney_figure_slot_t* figure_storage_get_by_order_mut(figure_storage_t* storage,
 
 figure_base_position_t figure_storage_derive_base_position(uint8_t slot_index)
 {
-  if (slot_index <= 2u)
+  if (slot_index <= DISNEY_INFINITY_HEXAGON_SLOT_MAX)
     return FIGURE_BASE_POSITION_HEXAGON;
-  if (slot_index <= 5u)
+  if (slot_index <= DISNEY_INFINITY_PLAYER1_SLOT_MAX)
     return FIGURE_BASE_POSITION_PLAYER1;
-  if (slot_index <= 8u)
+  if (slot_index <= DISNEY_INFINITY_PLAYER2_SLOT_MAX)
     return FIGURE_BASE_POSITION_PLAYER2;
   return FIGURE_BASE_POSITION_UNKNOWN;
 }

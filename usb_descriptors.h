@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+/* Official Disney Infinity base USB identifiers observed by Dolphin and other emulators. */
 #define DISNEY_INFINITY_USB_VID 0x0E6F
 #define DISNEY_INFINITY_USB_PID 0x0129
 

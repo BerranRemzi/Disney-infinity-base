@@ -7,13 +7,19 @@ enum
   FRAME_PREFIX_QUERY = 0x00,
   FRAME_PREFIX_RESP = 0xAA,
   FRAME_PREFIX_EVENT = 0xAB,
-  FRAME_PREFIX_CMD = 0xFF
+  FRAME_PREFIX_CMD = 0xFF,
+  PRESENT_HEXAGON_BASE = 0x10,
+  PRESENT_PLAYER1_BASE = 0x20,
+  PRESENT_PLAYER2_BASE = 0x30
 };
 
 static const uint8_t k_activate_base_response[] = {
     /* Fixed response payload mirrored from Dolphin's command 0x80 behavior. */
     0xAA, 0x15, 0x00, 0x00, 0x0F, 0x01, 0x00, 0x03, 0x02, 0x09, 0x09, 0x43,
     0x20, 0x32, 0x62, 0x36, 0x36, 0x4B, 0x34, 0x99, 0x67, 0x31, 0x93, 0x8C};
+
+/* Mask constant used by Dolphin's Infinity scramble/descramble algorithm. */
+static const uint64_t k_scramble_mask = 0x8E55AA1B3999E8AAull;
 
 static uint8_t checksum_u8(const uint8_t* data, uint8_t length)
 {
@@ -31,7 +37,7 @@ static uint32_t rotl32(uint32_t v, uint8_t bits)
 
 static uint64_t scramble_u32(uint32_t num_to_scramble, uint32_t garbage)
 {
-  uint64_t mask = 0x8E55AA1B3999E8AAull;
+  uint64_t mask = k_scramble_mask;
   uint64_t out = 0;
   uint8_t i;
   for (i = 0; i < 64u; ++i)
@@ -54,7 +60,7 @@ static uint64_t scramble_u32(uint32_t num_to_scramble, uint32_t garbage)
 
 static uint32_t descramble_u64(uint64_t in)
 {
-  uint64_t mask = 0x8E55AA1B3999E8AAull;
+  uint64_t mask = k_scramble_mask;
   uint32_t out = 0;
   uint8_t i;
   for (i = 0; i < 64u; ++i)
@@ -148,7 +154,7 @@ static void response_present_figures(const disney_infinity_t* inf, uint8_t seque
   for (i = 0; i < DISNEY_INFINITY_SLOT_COUNT; ++i)
   {
     const disney_figure_slot_t* slot = &inf->storage.slots[i];
-    uint8_t base = (i == 0u) ? 0x10u : (i < 4u) ? 0x20u : 0x30u;
+    uint8_t base = (i == 0u) ? PRESENT_HEXAGON_BASE : (i < 4u) ? PRESENT_PLAYER1_BASE : PRESENT_PLAYER2_BASE;
     if (!slot->present)
       continue;
     out[x] = (uint8_t)(base + slot->order_added);
