@@ -12,6 +12,7 @@
 #include "usb_hid.h"
 
 #define CTRL_BUFFER_SIZE 128u
+#define USB_DISCOVERY_DELAY_CYCLES 800000u
 
 static usb_hid_context_t g_hid_ctx;
 static usbd_device* g_usbd_dev;
@@ -173,7 +174,8 @@ void usb_base_platform_init(void)
 
   gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO12);
   gpio_clear(GPIOA, GPIO12);
-  for (volatile unsigned i = 0; i < 800000u; ++i)
+  /* Hold D+ low briefly so the host re-enumerates after firmware reset. */
+  for (volatile unsigned i = 0; i < USB_DISCOVERY_DELAY_CYCLES; ++i)
     __asm__("nop");
 
   gpio_set_mode(GPIOA, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT, GPIO12);
