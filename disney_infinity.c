@@ -154,7 +154,9 @@ static void response_present_figures(const disney_infinity_t* inf, uint8_t seque
   for (i = 0; i < DISNEY_INFINITY_SLOT_COUNT; ++i)
   {
     const disney_figure_slot_t* slot = &inf->storage.slots[i];
-    uint8_t base = (i == 0u) ? PRESENT_HEXAGON_BASE : (i < 4u) ? PRESENT_PLAYER1_BASE : PRESENT_PLAYER2_BASE;
+    uint8_t base = (i <= DISNEY_INFINITY_HEXAGON_SLOT_MAX)
+                       ? PRESENT_HEXAGON_BASE
+                       : (i <= DISNEY_INFINITY_PLAYER1_SLOT_MAX) ? PRESENT_PLAYER1_BASE : PRESENT_PLAYER2_BASE;
     if (!slot->present)
       continue;
     out[x] = (uint8_t)(base + slot->order_added);
